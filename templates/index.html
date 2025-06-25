@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Neuro-Symbolic Medical Diagnosis System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            animation: backgroundShift 10s ease-in-out infinite alternate;
+        }
+
+        @keyframes backgroundShift {
+            0% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+            100% { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 32px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #3498db 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            margin-bottom: 40px;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"><animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite"/></circle><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"><animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" begin="1s"/></circle><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"><animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="2s"/></circle></svg>');
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            color: white;
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+            font-weight: 300;
+            position: relative;
+            z-index: 1;
+        }
+
+        .system-status {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e74c3c;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.trained {
+            background: #27ae60;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-content {
+            display: flex;
+            gap: 40px;
+        }
+
+        .section {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #2ecc71, #f39c12, #e74c3c);
+            background-size: 300% 100%;
+            animation: gradientShift 3s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 600;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 2px;
+        }
+
+        .feature-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #3498db, #2ecc71);
+        }
+
+        .feature-info h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .feature-info p {
+            color: #6c757d;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: color 0.3s ease;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 15px 18px;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+            margin-top: 4px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            transform: translateY(-1px);
+        }
+
+        input:focus + label,
+        select:focus + label {
+            color: #3498db;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 18px 36px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            min-width: 200px;
+            margin-top: 8px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: linear-gradient(135deg, #bdc3c7, #95a5a6);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 15px 25px rgba(39, 174, 96, 0.4);
+        }
+
+        .status {
+            margin: 25px 0;
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: currentColor;
+            animation: statusSlide 1.5s ease-in-out;
+        }
+
+        @keyframes statusSlide {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, #d5edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+
+        .prediction-result {
+            background: linear-gradient(135deg, #e8f8f5 0%, #d5f4e6 100%);
+            border: 3px solid #27ae60;
+            border-radius: 16px;
+            padding: 25px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .prediction-result::before {
+            content: '🏥';
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2em;
+            opacity: 0.3;
+        }
+
+        .diagnosis {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #27ae60;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .explanation {
+            color: #2c3e50;
+            font-style: italic;
+            line-height: 1.6;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 8px;
+        }
+
+        .recommendations {
+            color: #2980b9;
+            font-weight: 500;
+            background: rgba(52, 152, 219, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #2980b9;
+        }
+
+        .rules-list {
+            max-height: 400px;
+            overflow-y: auto;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            margin-top: 10px;
+        }
+
+        .rules-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .rules-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .rules-list::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 4px;
+        }
+
+        .rule-item {
+            background: white;
+            margin: 12px 0;
+            padding: 16px;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.9em;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .rule-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .accuracy-display {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 3px solid #f0ad4e;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .accuracy-display::before {
+            content: '📊';
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2em;
+            opacity: 0.3;
+        }
+
+        .accuracy-display .accuracy-value {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: #e67e22;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .accuracy-label {
+            font-size: 1.1em;
+            color: #d68910;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+                gap: 30px;
+            }
+            
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2.2em;
+            }
+            
+            .header p {
+                font-size: 1.1em;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .btn {
+                min-width: auto;
+                padding: 15px 25px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 16px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .section {
+                padding: 16px;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Neuro-Symbolic Medical AI</h1>
+        <div class="main-content">
+            <!-- System Training Section -->
+            <div class="section">
+                <h2>🚀 System Training</h2>
+                <div class="feature-info">
+                    <b>Hybrid AI Architecture</b><br>
+                    This system combines deep neural networks with evolutionary symbolic reasoning to provide explainable medical diagnoses with high accuracy.
+                </div>
+                <div id="systemStatus" class="status info">Checking system status...</div>
+                <div id="accuracyDisplay" class="status success" style="display:none;">
+                    <span id="accuracyValue"></span> | <span id="modelDate"></span>
+                </div>
+                <div id="rulesSection" style="display:none;">
+                    <h3>🔍 Discovered Rules</h3>
+                    <div class="rules-list" id="rulesList"></div>
+                </div>
+                <hr>
+                <div class="feature-info">
+                    <b>Custom Training (Optional)</b><br>
+                    You can upload your own CSV dataset to train a new model. The system is already ready to use with a pre-trained model.
+                </div>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <input type="file" id="datasetFile" name="file" accept=".csv" required>
+                    <button type="submit" class="btn">Upload Dataset</button>
+                </form>
+                <button id="trainUploadedBtn" class="btn btn-success" style="display:none;" type="button">
+                    Train Model on Uploaded Data
+                </button>
+                <div id="uploadStatus"></div>
+                <div id="trainUploadedStatus"></div>
+            </div>
+            <!-- Patient Diagnosis Section -->
+            <div class="section">
+                <h2>🏥 Patient Diagnosis</h2>
+                <form id="patientForm">
+                    <div class="form-group">
+                        <label>Age (years)</label>
+                        <input type="number" id="age" min="1" max="120" value="45" required>
+                    </div>
+                    <div class="form-group">
+                        <label>BMI</label>
+                        <input type="number" id="bmi" step="0.1" min="10" max="50" value="25" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Family History</label>
+                        <select id="family_history" required>
+                            <option value="0">No Family History</option>
+                            <option value="1">Yes, Family History Present</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Systolic BP (mmHg)</label>
+                        <input type="number" id="blood_pressure_systolic" min="70" max="250" value="120" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Diastolic BP (mmHg)</label>
+                        <input type="number" id="blood_pressure_diastolic" min="40" max="150" value="80" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Heart Rate (bpm)</label>
+                        <input type="number" id="heart_rate" min="40" max="200" value="70" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Blood Sugar (mg/dL)</label>
+                        <input type="number" id="blood_sugar" min="50" max="400" value="90" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Cholesterol (mg/dL)</label>
+                        <input type="number" id="cholesterol" min="100" max="400" value="180" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Exercise (hours/week)</label>
+                        <input type="number" id="exercise_hours_per_week" step="0.5" min="0" max="20" value="3" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Smoking Years</label>
+                        <input type="number" id="smoking_years" min="0" max="70" value="0" required>
+                    </div>
+                    <button type="submit" class="btn btn-success" id="predictBtn" disabled>
+                        <span id="predictBtnText">🔮 Generate Diagnosis</span>
+                    </button>
+                </form>
+                <div id="predictStatus"></div>
+                <div id="results"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // System status check
+        function updateSystemStatus() {
+            fetch('/check_model_status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('systemStatus');
+                    const accuracyDiv = document.getElementById('accuracyDisplay');
+                    const accuracyValue = document.getElementById('accuracyValue');
+                    const modelDate = document.getElementById('modelDate');
+                    const predictBtn = document.getElementById('predictBtn');
+                    if (data.is_trained) {
+                        statusDiv.className = 'status success';
+                        statusDiv.textContent = 'System Ready';
+                        predictBtn.disabled = false;
+                        if (data.accuracy) {
+                            accuracyDiv.style.display = '';
+                            accuracyValue.textContent = 'Accuracy: ' + data.accuracy + '%';
+                        }
+                        if (data.training_date) {
+                            modelDate.textContent = 'Trained: ' + data.training_date;
+                        }
+                    } else {
+                        statusDiv.className = 'status error';
+                        statusDiv.textContent = 'System Not Trained';
+                        predictBtn.disabled = true;
+                        accuracyDiv.style.display = 'none';
+                    }
+                });
+        }
+        updateSystemStatus();
+
+        // Patient prediction
+        document.getElementById('patientForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const predictBtn = document.getElementById('predictBtn');
+            const predictBtnText = document.getElementById('predictBtnText');
+            const predictStatus = document.getElementById('predictStatus');
+            const results = document.getElementById('results');
+            predictBtn.disabled = true;
+            predictBtnText.textContent = 'Analyzing...';
+            predictStatus.innerHTML = '<div class="status info">Analyzing patient data...</div>';
+            const formData = {
+                age: document.getElementById('age').value,
+                bmi: document.getElementById('bmi').value,
+                family_history: document.getElementById('family_history').value,
+                blood_pressure_systolic: document.getElementById('blood_pressure_systolic').value,
+                blood_pressure_diastolic: document.getElementById('blood_pressure_diastolic').value,
+                heart_rate: document.getElementById('heart_rate').value,
+                blood_sugar: document.getElementById('blood_sugar').value,
+                cholesterol: document.getElementById('cholesterol').value,
+                exercise_hours_per_week: document.getElementById('exercise_hours_per_week').value,
+                smoking_years: document.getElementById('smoking_years').value
+            };
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    predictStatus.innerHTML = '<div class="status success">Diagnosis generated!</div>';
+                    results.innerHTML = data.explanation;
+                } else {
+                    predictStatus.innerHTML = '<div class="status error">Failed to generate diagnosis: ' + data.message + '</div>';
+                    results.innerHTML = '';
+                }
+            } catch (error) {
+                predictStatus.innerHTML = '<div class="status error">Failed to generate diagnosis: ' + error.message + '</div>';
+                results.innerHTML = '';
+            } finally {
+                predictBtn.disabled = false;
+                predictBtnText.textContent = '🔮 Generate Diagnosis';
+            }
+        });
+
+        // Upload dataset
+        document.getElementById('trainUploadedBtn').style.display = 'none';
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('datasetFile');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const trainBtn = document.getElementById('trainUploadedBtn');
+            uploadStatus.innerHTML = '';
+            trainBtn.style.display = 'none';
+            if (!fileInput.files.length) {
+                uploadStatus.innerHTML = '<div class="status error">Please select a file.</div>';
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+                const response = await fetch('/upload_dataset', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    uploadStatus.innerHTML = '<div class="status success">Dataset uploaded! Now you can train the model.</div>';
+                    trainBtn.style.display = '';
+                } else {
+                    uploadStatus.innerHTML = '<div class="status error">' + data.message + '</div>';
+                }
+            } catch (error) {
+                uploadStatus.innerHTML = '<div class="status error">Upload failed: ' + error.message + '</div>';
+            }
+        });
+
+        // Train on uploaded data
+        document.getElementById('trainUploadedBtn').addEventListener('click', async function() {
+            const trainBtn = document.getElementById('trainUploadedBtn');
+            const trainStatus = document.getElementById('trainUploadedStatus');
+            trainBtn.disabled = true;
+            trainStatus.innerHTML = '<div class="status info">Training on uploaded data...</div>';
+            try {
+                const response = await fetch('/train_on_uploaded', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    trainStatus.innerHTML = '<div class="status success">' + data.message + '</div>';
+                    updateSystemStatus();
+                    if (data.rules && data.rules.length > 0) {
+                        document.getElementById('rulesSection').style.display = '';
+                        const rulesList = document.getElementById('rulesList');
+                        rulesList.innerHTML = data.rules.map(rule =>
+                            `<div class="rule-item">${rule}</div>`
+                        ).join('');
+                    }
+                } else {
+                    trainStatus.innerHTML = '<div class="status error">' + data.message + '</div>';
+                }
+            } catch (error) {
+                trainStatus.innerHTML = '<div class="status error">Training failed: ' + error.message + '</div>';
+            }
+            trainBtn.disabled = false;
+        });
+    });
+    </script>
+</body>
+</html>
